@@ -1,0 +1,118 @@
+Przygotowanie danych
+```{r}
+df <- read.csv(
+  file = 'winemag-data-130k-v2.csv',
+  sep = ','
+)
+
+df2 <- df[,colSums(is.na(df["description"]))<nrow(df)]
+df2[["description"]] <- tolower(df2[["description"]])
+
+library(stringr)
+df2[["description"]] <-str_replace(gsub("([^a-z'])", " ", df2[["description"]]), "B", "b") 
+df2[["description"]] <-str_replace(gsub("\\s+", " ", df2[["description"]]), "B", "b") 
+df2[["description"]] <-str_replace(gsub("\\s$", "", df2[["description"]]), "B", "b")
+
+
+#Sprawdzanie
+df2[29996,"description"]
+df[29996,"description"]
+df2[502,"description"]
+df[502,"description"]
+```
+Podział danych (Przy uczeniu na naszych danych)
+Jaką częśc danych bierzemy czy na tym etapie wszyskie vektory musimy zrobić
+
+```{r}
+#
+library(data.table)
+#library(magrittr)
+#data("df2")
+setDT(df2)
+setkey(df2, X)
+set.seed(2017L)
+all_ids = df2$X
+train_ids = setdiff(all_ids, -1)
+#test_ids = setdiff(all_ids, train_ids)
+train = df2[J(train_ids)]
+#test = df2[J(test_ids)]
+
+```
+
+Robienie słownika z wykorzystaniem tokenóW (bardziej użyteczne, tokeny są spoko- matrix w kolumnie 'value' ma listę słóW)
+
+```{r}
+library(text2vec)
+train_tokens = word_tokenizer(train$description)
+it_train = itoken(train_tokens,
+                  ids = train$X,
+                  # turn off progressbar because it won't look nice in rmd
+                  progressbar = FALSE)
+vocab = create_vocabulary(it_train)
+vocab[order(-vocab$doc_count),]
+```
+
+Robimy TCM na potrzeby glove
+tcm: Term-co-occurence matrix construction
+
+```{r}
+vectorizer = vocab_vectorizer(vocab)
+# use window of 5 for context words
+tcm = create_tcm(it_train, vectorizer, skip_grams_window = 5L)
+```
+ 
+GLOVE 
+https://datascience-enthusiast.com/DL/Operations_on_word_vectors.html
+(jakieś zabawy przeglądnąć tylko) https://mmuratarat.github.io/2020-03-20/glove
+
+Uczenie
+
+```{r}
+glove = GlobalVectors$new(rank = 50, x_max = 10)
+wv_main = glove$fit_transform(tcm, n_iter = 100, convergence_tol = 0.01, n_threads = 12)
+```
+ 
+ Wektory
+ 
+```{r}
+wv_context = glove$components
+word_vectors = wv_main + t(wv_context)
+head(word_vectors)
+```
+ 
+ Sprawdzenie
+ 
+```{r}
+fruit = word_vectors["fruit", , drop = FALSE] + word_vectors["black", , drop = FALSE]
+cos_sim = sim2(x = word_vectors, y = fruit, method = "cosine", norm = "l2") 
+# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
+head(sort(cos_sim[,1], decreasing = TRUE), 5)
+```
+ Wektory dla doc (przeliczeyć ręcznie dla sprawdzenie czy na pewno dobrze liczy)
+ Niewydajne jakieś macierzowe rozwiązanie rozkminić
+ Przykład dla 100 bo liczy się 5k lat
+ 
+```{r}
+doc_vector <- vector(mode = "list", length = 0)
+for (token in train_tokens[1:100]) {
+  doc_vector <- append(doc_vector,colMeans(word_vectors[token,]))
+}
+doc_vectors <- matrix(doc_vector,ncol=50,byrow=TRUE)
+```
+
+```{r}
+head(doc_vectors)
+```
+ Jak to działa
+```{r}
+writeLines('lista słów dokumentu')
+writeLines(train_tokens[[1]]) # token zawiera listę słów dla danego dokumentu
+writeLines("\n")
+writeLines("wektory dla poszczególnych słów")
+word_vectors[train_tokens[[1]],] # macierz/DF zawierająca vektory dla poszczególnych słów
+writeLines("\n")
+writeLines("Srednia wartość z współrzędnych wektorów -> wektor dokumentu")
+print(colMeans(word_vectors[train_tokens[[1]],]))
+```
+ 
+ 
