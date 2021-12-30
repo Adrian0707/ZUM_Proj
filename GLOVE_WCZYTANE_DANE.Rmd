@@ -137,32 +137,54 @@ Robienie Tokenów
 tokens = word_tokenizer(df2$description)
 ```
 
-Jak działa oczyszczanie ?
-```{r}
-words <- row.names(glove_T)
-writeLines("intersect\n")
-intersect(tokens[[1]],words)
-writeLines("\noriginal\n")
-tokens[[1]]
-```
-
 Czyszczenie tokenóW
 
 Trwa długo sprawdzanie części wspólnej z ogromnym words za każdym razem 
 
 !!!może wcześniej zrobić intersekcje words ze słowami występującymi by ograniczyć czas przeszukiwania ?!!!
+
+Dla 1000
+pełny słownik 23.032 secs
+słownik cześć wspólna 0.763001 secs
+
+```{r}
+tokens_flat <- unlist(tokens, recursive=FALSE)
+tokens_flat_uniq <- unique(tokens_flat)
+words_in_token <- intersect(tokens_flat_uniq,words)
+```
+
 ```{r}
 t1 = Sys.time()
-tokens_clear <- lapply(tokens, function(x) intersect(x,words))
+tokens_clear <- lapply(tokens, function(x) intersect(x,words_in_token))
 print(difftime(Sys.time(), t1, units = 'sec'))
+```
 
+# ```{r}
+# t1 = Sys.time()
+# tokens_clear <- lapply(tokens[1:1000], function(x) intersect(x,words))
+# print(difftime(Sys.time(), t1, units = 'sec'))
+# ```
+
+Jak działa oczyszczanie ?
+```{r}
+words <- row.names(glove_T)
+writeLines("intersect\n")
+intersect(tokens[[1]],words_in_token)
+writeLines("\noriginal\n")
+tokens[[1]]
+```
+
+Obcinanie glove_T tylko to co wytępuje w words_in_tokens bo się nie może doliczyć
+
+```{r}
+glove_T_cut <- glove_T[ row.names(glove_T) %in% words_in_token, ]
 ```
 
 
-Docs Vecs
+Docs Vecs 88.144 secs
 ```{r}
 t1 = Sys.time()
-doc_vectors_list <- lapply(tokens_clear, function(x) colMeans(glove_T[x,]))
+doc_vectors_list <- lapply(tokens_clear, function(x) colMeans(glove_T_cut[x,]))
 print(difftime(Sys.time(), t1, units = 'sec'))
 ```
 
