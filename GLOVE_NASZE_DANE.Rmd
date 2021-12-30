@@ -20,6 +20,29 @@ df[29996,"description"]
 df2[502,"description"]
 df[502,"description"]
 ```
+Klasy ze wsględu na points
+```{r}
+dyskretyzacja <- function(x) {
+  if(x<82) {
+    1
+  }
+  else if(x<84) {
+    2
+  }
+  else if(x<86) {
+    3
+  }
+  else if(x<88) {
+    4
+  }
+  else{
+    5
+  }
+}
+
+df2$points<-apply(array(df2[["points"]]),MARGIN=1, FUN=dyskretyzacja)
+```
+
 Podział danych (Przy uczeniu na naszych danych)
 Jaką częśc danych bierzemy czy na tym etapie wszyskie vektory musimy zrobić
 
