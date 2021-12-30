@@ -112,7 +112,7 @@ cos_sim = sim2(x = word_vectors, y = fruit, method = "cosine", norm = "l2")
 head(sort(cos_sim[,1], decreasing = TRUE), 5)
 ```
  Wektory dla doc (przeliczeyć ręcznie dla sprawdzenie czy na pewno dobrze liczy)
- Niewydajne jakieś macierzowe rozwiązanie rozkminić
+ Niewydajne, jakieś macierzowe rozwiązanie rozkminić (może użycie "apply" pomoże)
  Przykład dla 100 bo liczy się 5k lat
  
 ```{r}
