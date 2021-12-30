@@ -1,0 +1,67 @@
+Definicja funkcji 
+
+```{r}
+proc_pretrained_vec <- function(p_vec) {
+  # initialize space for values and the names of each word in vocab
+  vals <- vector(mode = "list", length(p_vec))
+  names <- character(length(p_vec))
+
+  # loop through to gather values and names of each word
+  for(i in 1:length(p_vec)) {
+    if(i %% 1000 == 0) {print(i)}
+    this_vec <- p_vec[i]
+    this_vec_unlisted <- unlist(strsplit(this_vec, " "))
+    this_vec_values <- as.numeric(this_vec_unlisted[-1])  # this needs testing, does it become numeric?
+    this_vec_name <- this_vec_unlisted[1]
+
+    vals[[i]] <- this_vec_values
+    names[[i]] <- this_vec_name
+  }
+
+  # convert lists to data.frame and attach the names
+  glove <- data.frame(vals)
+  names(glove) <- names
+
+  return(glove)
+}
+```
+
+Wczytanie 
+
+```{r}
+setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
+    
+g6b <- scan(file = "Data/glove.6B/glove.6B.50d.txt", what="", sep="\n")
+
+glove <- proc_pretrained_vec(g6b)
+    
+print(dim(glove)) 
+```
+Wektory podobne
+
+```{r}
+glove_T = t(glove)
+```
+
+
+
+```{r}
+fruit = glove_T["king", , drop = FALSE] - glove_T["man", , drop = FALSE] + glove_T["woman", , drop = FALSE]  
+cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
+# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
+head(sort(cos_sim[,1], decreasing = TRUE), 5)
+```
+
+```{r}
+fruit = glove_T["flock", , drop = FALSE] - glove_T["geese", , drop = FALSE] + glove_T["buffalo", , drop = FALSE]  
+cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
+# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
+head(sort(cos_sim[,1], decreasing = TRUE), 5)
+```
+
+```{r}
+fruit = glove_T["flock", , drop = FALSE] - glove_T["geese", , drop = FALSE] + glove_T["bison", , drop = FALSE]  
+cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
+# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
+head(sort(cos_sim[,1], decreasing = TRUE), 5)
+```
