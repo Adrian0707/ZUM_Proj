@@ -1,0 +1,70 @@
+*********************************************************
+Skrypt do wykorzystania z danymi z poprzednich skryptów
+Podmienić nazwy DF w odpowiednich miejscach
+*********************************************************
+
+Biblioteka caret (Spróbować użyć tych bibliotek bezpośrednio)
+biblioteka wspomagająca używająca bibliotek: 
+"e1071" dla metody "svmPoly" 
+"naivebayes" dla metody "nb"
+https://topepo.github.io/caret/train-models-by-tag.html#neural-network
+
+Uczenie
+x,y do podmiany w zależności od danych
+method svmPoly lub nb zależy co chcemy robić
+```{r}
+library(caret)
+
+ctrl.svm.1 <- trainControl(method="repeatedcv",
+                           number=2,
+                           repeats=1,
+                           summaryFunction = multiClassSummary,
+                           verboseIter = TRUE)
+
+# fit.svm.1 <- train(x = as.matrix(dtm_train), y= as.factor(train$points), 
+#                    method="svmPoly",  
+#                    metric="Accuracy", 
+#                    trControl = ctrl.svm.1, 
+#                    scale = FALSE, verbose = TRUE)
+fit.svm.1 <- train(x = dtm_train, y= as.factor(train$points),
+                   method="svmPoly",
+                   metric="Accuracy",
+                   trControl = ctrl.svm.1,
+                   scale = FALSE, verbose = TRUE)
+
+```
+ 
+ Predykcja
+  newdata do podmiany
+```{r}
+predict(fit.svm.1, newdata = head(dtm_test), type = "prob")
+```
+
+Biblioteka glmnet działa bezpośtednio na tych DF niestety nie jest to bayes an svm
+Bardzo szybkie
+
+"It fits linear, logistic and multinomial, poisson, and Cox regression models. It can also fit multi-response linear regression, generalized linear models for custom families, and relaxed lasso regression models."
+
+https://glmnet.stanford.edu/articles/glmnet.html
+ 
+Uczenie
+```{r}
+library(glmnet)
+NFOLDS = 4
+res = cv.glmnet(x = dtm_train_tfidf, y = train[['points']], 
+                              family = 'multinomial', 
+                              alpha = 1,
+                              type.measure = "mae",
+                              nfolds = NFOLDS,
+                              thresh = 1e-3,
+                              maxit = 1e3)
+print(paste("max AUC =", round(max(res$cvm), 4)))
+plot(res)
+```
+
+ Predykcja
+```{r}
+#Test on hold-out sample
+preds = predict(res, dtm_test_tfidf, type = 'response')
+print(preds)
+```
