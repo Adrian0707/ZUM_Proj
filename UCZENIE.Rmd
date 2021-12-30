@@ -16,8 +16,8 @@ method svmPoly lub nb zależy co chcemy robić
 library(caret)
 
 ctrl.svm.1 <- trainControl(method="repeatedcv",
-                           number=2,
-                           repeats=1,
+                           number=10,
+                           repeats=5,
                            summaryFunction = multiClassSummary,
                            verboseIter = TRUE)
 
