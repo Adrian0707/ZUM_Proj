@@ -9,6 +9,9 @@ biblioteka wspomagająca używająca bibliotek:
 "naivebayes" dla metody "nb"
 https://topepo.github.io/caret/train-models-by-tag.html#neural-network
 
+słaby wsad:
+"dtm is a sparse matrix in CSC format dgCMatrix. So look for packages which can take sparse matrix as an input. Or you can try to apply dimensionality reduction (for example LSA) and then feed this dense matrix to caret."
+
 Uczenie
 x,y do podmiany w zależności od danych
 method svmPoly lub nb zależy co chcemy robić
