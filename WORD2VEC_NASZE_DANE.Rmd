@@ -1,0 +1,44 @@
+---
+title: "WORD2VEC_NASZE_DANE"
+author: "Kudzia Anna"
+date: "30 December 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Wczytanie naszych danych
+
+```{r}
+df <- read.csv(
+  file = 'winemag-data-130k-v2.csv',
+  sep = ','
+)
+
+df2 <- df[,colSums(is.na(df["description"]))<nrow(df)]
+```
+
+Przygotowanie danych do tworzeni modelu word2vec
+```{r}
+library(word2vec)
+data <- txt_clean_word2vec(df2$description)
+head(data)
+```
+
+Budowanie modelu word2vec
+
+```{r}
+set.seed(123456789)
+model <- word2vec(x = data, type = "skip-gram", hs=TRUE, dim = 20, iter = 5)
+embedding <- as.matrix(model)
+head(embedding)
+```
+
+Tworzenie wektora dla kazdego dokumentu
+```{r}
+doc <- data.frame(doc_id = df2$X, text = data)
+docemb <- doc2vec(model, doc, type="embedding")
+head(docemb)
+```
