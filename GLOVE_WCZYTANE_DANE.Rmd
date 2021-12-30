@@ -41,6 +41,7 @@ Wektory podobne
 
 ```{r}
 glove_T = t(glove)
+library(text2vec)
 ```
 
 
@@ -135,18 +136,33 @@ Robienie Tokenów
 ```{r}
 tokens = word_tokenizer(df2$description)
 ```
+
+Jak działa oczyszczanie ?
 ```{r}
 words <- row.names(glove_T)
+writeLines("intersect\n")
+intersect(tokens[[1]],words)
+writeLines("\noriginal\n")
+tokens[[1]]
 ```
 
 Czyszczenie tokenóW
-```{r}
-tokens <- lapply(tokens, function(x) intersect(x,words))
 
-```
+Trwa długo sprawdzanie części wspólnej z ogromnym words za każdym razem 
+
+!!!może wcześniej zrobić intersekcje words ze słowami występującymi by ograniczyć czas przeszukiwania ?!!!
 ```{r}
 t1 = Sys.time()
-doc_vectors_list <- lapply(train_tokens, function(x) colMeans(word_vectors[x,]))
+tokens_clear <- lapply(tokens, function(x) intersect(x,words))
+print(difftime(Sys.time(), t1, units = 'sec'))
+
+```
+
+
+Docs Vecs
+```{r}
+t1 = Sys.time()
+doc_vectors_list <- lapply(tokens_clear, function(x) colMeans(glove_T[x,]))
 print(difftime(Sys.time(), t1, units = 'sec'))
 ```
 
