@@ -115,17 +115,30 @@ head(sort(cos_sim[,1], decreasing = TRUE), 5)
  Niewydajne, jakieś macierzowe rozwiązanie rozkminić (może użycie "apply" pomoże)
  Przykład dla 100 bo liczy się 5k lat
  
+ Porównanie prędkości dla 1000
+ apply 11.31808 secs <- szybsze
+ loop 49.566 secs
+ 
+ apply dla całości 128.9838 secs akceptowalne
 ```{r}
-doc_vector <- vector(mode = "list", length = 0)
-for (token in train_tokens[1:100]) {
-  doc_vector <- append(doc_vector,colMeans(word_vectors[token,]))
-}
-doc_vectors <- matrix(doc_vector,ncol=50,byrow=TRUE)
+t1 = Sys.time()
+doc_vectors_list <- lapply(train_tokens, function(x) colMeans(word_vectors[x,]))
+print(difftime(Sys.time(), t1, units = 'sec'))
 ```
+```{r}
+doc_vectors_matrix <- do.call("cbind",doc_vectors_list)
+```
+ 
+# ```{r}
+# doc_vector <- vector(mode = "list", length = 0)
+# t1 = Sys.time()
+# for (token in train_tokens[1:10000]) {
+#   doc_vector <- append(doc_vector,colMeans(word_vectors[token,]))
+# }
+# print(difftime(Sys.time(), t1, units = 'sec'))
+# doc_vectors <- matrix(doc_vector,ncol=50,byrow=TRUE)
+# ```
 
-```{r}
-head(doc_vectors)
-```
  Jak to działa
 ```{r}
 writeLines('lista słów dokumentu')
