@@ -1,0 +1,122 @@
+---
+title: "WORD2VEC_GOTOWE_WEKTORY"
+author: "Kudzia Anna"
+date: "5 January 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Wczytanie danych
+```{r}
+df <- read.csv(
+  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/winemag-data-130k-v2.csv",
+  sep = ','
+)
+df <- df[,colSums(is.na(df["description"]))<nrow(df)]
+
+library(word2vec)
+data <- txt_clean_word2vec(df$description)
+```
+
+
+Tokenize reviews
+```{r}
+library(keras)
+tokenizer <- text_tokenizer() %>% 
+  fit_text_tokenizer(data)
+```
+
+Tworzenie word_index
+```{r}
+word_index = tokenizer$word_index
+cat("Found", length(word_index), "unique tokens.\n")
+write.table(
+  word_index,
+  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/word_index_word2vec.txt"
+)
+```
+
+
+Ładowanie gotowych wektorów
+```{r}
+word2vec_dir = 'C:/Users/aniak/Documents/Studia/ZUM_Proj/vectors_word2vec'
+lines <- readLines(file.path(word2vec_dir, "model.txt"))
+embeddings_index <- new.env(hash = TRUE, parent = emptyenv())
+for (i in 1:length(lines)) {
+  line <- lines[[i]]
+  values <- strsplit(line, " ")[[1]]
+  word <- values[[1]]
+  embeddings_index[[word]] <- as.double(values[-1])
+}
+cat("Found", length(embeddings_index), "word vectors.\n")
+
+```
+
+
+Tworzenie macierzy embeddigow
+```{r}
+embedding_dim <- 100
+embedding_matrix <- array(0, c(max_words, embedding_dim))
+for (word in names(word_index)) {
+  index <- word_index[[word]]
+  if (index < max_words) {
+    embedding_vector <- embeddings_index[[word]]
+    if (!is.null(embedding_vector))
+      # Words not found in the embedding index will be all zeros.
+      embedding_matrix[index+1,] <- embedding_vector
+  }
+}
+
+write.table(
+  embedding_matrix,
+  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/embedding_matrix_word2vec.txt"
+)
+```
+
+Załadowanie word_index
+```{r}
+word_index <- read.table(
+  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/word_index_word2vec.txt"
+)
+head(word_index)
+```
+
+Załadowanie embedding_matrix
+```{r}
+embedding_matrix <- read.table(
+  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/embedding_matrix_word2vec.txt"
+)
+head(embedding_matrix)
+```
+
+Przygot_owanie doc2vec
+```{r}
+doc2vec <- array(0, c(length(data), 100))
+
+for (doc in 1:length(data)){
+  text <- as.character(data[doc])
+  words <- strsplit(text, " ")
+  doc2vec_tmp <- array(0, c(length(unlist(words)), 100))
+  i <- 1
+  for (word in unlist(words)){
+    index <- word_index[1, word]
+    doc_vector <- as.numeric(embedding_matrix[index,])
+    if (!is.null(doc_vector))
+      doc2vec_tmp[i, ] <- doc_vector
+      i <- i+1
+    
+  }
+  tmp <- colMeans(aperm(doc2vec_tmp, c(1, 2)), na.rm = TRUE)
+  doc2vec[doc,] <- tmp
+  if(doc %% 10000 == 0){
+    print(doc)
+  }
+}
+
+write.table(doc2vec, file="C:/Users/aniak/Documents/Studia/ZUM_Proj/doc2vec_word2vec_downloaded.txt")
+
+```
