@@ -1,7 +1,8 @@
 Przygotowanie danych
 ```{r}
+setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
 df <- read.csv(
-  file = 'winemag-data-130k-v2.csv',
+  file = 'Data/winemag-data-130k-v2.csv',
   sep = ','
 )
 
@@ -55,10 +56,11 @@ setDT(df2)
 setkey(df2, X)
 set.seed(2017L)
 all_ids = df2$X
-train_ids = sample(all_ids, 4000)
-test_ids = setdiff(all_ids, train_ids)
+#train_ids = sample(all_ids, 4000)
+#test_ids = setdiff(all_ids, train_ids)
+train_ids = setdiff(all_ids, -1)
 train = df2[J(train_ids)]
-test = df2[J(test_ids)]
+#test = df2[J(test_ids)]
 
 ```
 
@@ -94,13 +96,13 @@ dtm_train_tfidf = fit_transform(dtm_train, tfidf)
 # tfidf modified by fit_transform() call!
 
 # apply pre-trained tf-idf transformation to test data
-test_tokens = tok_fun(test$description)
+#test_tokens = tok_fun(test$description)
 
-it_test = itoken(test_tokens,
-                 ids = test$X,
-                 progressbar = FALSE)
+#it_test = itoken(test_tokens,
+#                 ids = test$X,
+#                 progressbar = FALSE)
 
 
-dtm_test = create_dtm(it_test, vectorizer)
-dtm_test_tfidf = transform(dtm_test, tfidf)
+#dtm_test = create_dtm(it_test, vectorizer)
+#dtm_test_tfidf = transform(dtm_test, tfidf)
 ```
