@@ -157,8 +157,7 @@ Obcinanie glove_T tylko te słowa, które wytępują w tokens
 glove_T_cut <- glove_T[ row.names(glove_T) %in% tokens_flat_uniq, ]
 ```
 
-Dopisanie do wektorów wektoróW nie występujących obecnie ale występujących w description jako 
-wektory zerowe 
+Dopisanie do wektorów, wektoróW dla słów nie występujących obecnie w zaczytanych danych, ale występujących w description jako wektory zerowe 
 
 ```{r}
 words_missing_in_glove_T_cut <- tokens_flat_uniq[!(tokens_flat_uniq %in% row.names(glove_T_cut)) ]
