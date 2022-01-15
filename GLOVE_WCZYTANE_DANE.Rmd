@@ -31,7 +31,7 @@ Wczytanie
 ```{r}
 setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
     
-g6b <- scan(file = "Data/glove.6B/glove.6B.50d.txt", what="", sep="\n")
+g6b <- scan(file = "Data/glove.6B/glove.6B.100d.txt", what="", sep="\n")
 
 glove <- proc_pretrained_vec(g6b)
     
@@ -170,7 +170,9 @@ length(words_missing_in_glove_T_cut)+dim(glove_T_cut)[1]
 print("unique words in tokens")
 length(tokens_flat_uniq)
 
-words_missing_in_glove_T_cut_matrix <- matrix(0, length(words_missing_in_glove_T_cut), 50)
+words_missing_in_glove_T_cut_matrix <- matrix(0, 
+                                              length(words_missing_in_glove_T_cut),
+                                              dim(glove_T_cut)[2])
 rownames(words_missing_in_glove_T_cut_matrix) <- words_missing_in_glove_T_cut
 
 glove_T_cut_missing_words_added <- rbind(glove_T_cut,words_missing_in_glove_T_cut_matrix)

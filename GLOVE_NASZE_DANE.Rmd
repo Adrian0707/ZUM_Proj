@@ -65,7 +65,7 @@ GLOVE
 Uczenie
 
 ```{r}
-glove = GlobalVectors$new(rank = 50, x_max = 10)
+glove = GlobalVectors$new(rank = 100, x_max = 10)
 wv_main = glove$fit_transform(tcm, n_iter = 100, convergence_tol = 0.01, n_threads = 12)
 ```
  
