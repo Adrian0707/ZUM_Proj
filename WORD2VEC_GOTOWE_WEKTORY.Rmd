@@ -23,7 +23,7 @@ data <- txt_clean_word2vec(df$description)
 ```
 
 
-Tokenize reviews
+Tokenizacja recenzji
 ```{r}
 library(keras)
 tokenizer <- text_tokenizer() %>% 
@@ -93,7 +93,7 @@ embedding_matrix <- read.table(
 head(embedding_matrix)
 ```
 
-Przygot_owanie doc2vec
+Przygotowanie i zapisanie pliku z wektorami dokumentów
 ```{r}
 doc2vec <- array(0, c(length(data), 100))
 
