@@ -31,7 +31,7 @@ Budowanie modelu word2vec
 
 ```{r}
 set.seed(123456789)
-model <- word2vec(x = data, type = "skip-gram", hs=TRUE, dim = 20, iter = 5)
+model <- word2vec(x = data, type = "skip-gram", hs=TRUE, dim = 100, iter = 5)
 embedding <- as.matrix(model)
 head(embedding)
 ```
