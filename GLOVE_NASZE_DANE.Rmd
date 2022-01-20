@@ -1,134 +1,96 @@
 Przygotowanie danych
 ```{r}
+library(stringr)
+
 setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
 df <- read.csv(
   file = 'Data/winemag-data-130k-v2.csv',
   sep = ','
 )
+# Odrzucenie przykładów nie posiadających wartości w kolumnie opisu
+df_processed <- df[,colSums(is.na(df["description"]))<nrow(df)]
 
-df2 <- df[,colSums(is.na(df["description"]))<nrow(df)]
-df2[["description"]] <- tolower(df2[["description"]])
+# Zamiana wszyskich znaków na małe znaki
+df_processed[["description"]] <- tolower(df_processed[["description"]])
 
-library(stringr)
-df2[["description"]] <-str_replace(gsub("([^a-z'])", " ", df2[["description"]]), "B", "b") 
-df2[["description"]] <-str_replace(gsub("\\s+", " ", df2[["description"]]), "B", "b") 
-df2[["description"]] <-str_replace(gsub("\\s$", "", df2[["description"]]), "B", "b")
+# Odrzucenie wszyskich znaków specjalnych oraz liczb poza znakiem "'" specyficznym dla języka ang
+df_processed[["description"]] <- str_replace(gsub("([^a-z'])", 
+                                                  " ", 
+                                                  df_processed[["description"]]), 
+                                             "B", 
+                                             "b") 
 
+# Usunięcie powtórzonych spacji
+df_processed[["description"]] <-str_replace(gsub("\\s+",
+                                                 " ",
+                                                 df_processed[["description"]]),
+                                              "B",
+                                              "b")
 
-#Sprawdzanie
-#df2[29996,"description"]
-#df[29996,"description"]
-#df2[502,"description"]
-#df[502,"description"]
-```
-
-Podział danych (Przy uczeniu na naszych danych)
-Jaką częśc danych bierzemy czy na tym etapie wszyskie vektory musimy zrobić
-
-```{r}
-library(data.table)
-
-setDT(df2)
-setkey(df2, X)
-set.seed(2017L)
-all_ids = df2$X
-train_ids = setdiff(all_ids, -1)
-#test_ids = setdiff(all_ids, train_ids)
-train = df2[J(train_ids)]
-#test = df2[J(test_ids)]
-
+# Usunięcie spacji na końcu opisu
+df_processed[["description"]] <-str_replace(gsub("\\s$", "", df_processed[["description"]]), "B", "b")
 ```
 
 Robienie słownika i tokenóW 
-
 ```{r}
 library(text2vec)
-train_tokens = word_tokenizer(train$description)
-it_train = itoken(train_tokens,
-                  ids = train$X,
-                  progressbar = FALSE)
-vocab = create_vocabulary(it_train)
-vocab[order(-vocab$doc_count),]
+tokens = word_tokenizer(df_processed$description)
+it = itoken(tokens, ids = df_processed$X, progressbar = FALSE)
+vocab = create_vocabulary(it)
 ```
 
-Robimy TCM na potrzeby glove
+Tworzenie TCM
 tcm: Term-co-occurence matrix construction
-
 ```{r}
 vectorizer = vocab_vectorizer(vocab)
-# use window of 5 for context words
-tcm = create_tcm(it_train, vectorizer, skip_grams_window = 5L)
+tcm = create_tcm(it, vectorizer, skip_grams_window = 5L)
 ```
  
-GLOVE 
-
-Uczenie
-
+Fit and transform GLOVE
 ```{r}
 glove = GlobalVectors$new(rank = 100, x_max = 10)
-wv_main = glove$fit_transform(tcm, n_iter = 100, convergence_tol = 0.01, n_threads = 12)
+wv_main = glove$fit_transform(tcm, n_iter = 100, convergence_tol = 0.01, n_threads = 12);
 ```
  
- Wektory
- 
+Tworzenie wektorów
 ```{r}
 wv_context = glove$components
 word_vectors = wv_main + t(wv_context)
-#head(word_vectors)
 ```
  
- Sprawdzenie
- 
+Sprawdzenie poprawności działania
 ```{r}
 fruit = word_vectors["fruit", , drop = FALSE] + word_vectors["black", , drop = FALSE]
 cos_sim = sim2(x = word_vectors, y = fruit, method = "cosine", norm = "l2") 
-# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
 head(sort(cos_sim[,1], decreasing = TRUE), 5)
 ```
- Wektory dla doc 
- 
- Porównanie prędkości dla 1000
- apply 11.31808 secs <- szybsze
- loop 49.566 secs
- 
- apply dla całości 128.9838 secs
- 
- Dla wszystkich tokenóW pobierane są występujące w nich wektory słów a następnie liczona jest średnia z wartości kolumn (kolumna-współrzędna wektora) 
+Tworzenie wektorów dla dokumentów 
+Dla wszystkich tokenóW pobierane są występujące w nich wektory słów a następnie liczona jest średnia z wartości kolumn (kolumna-współrzędna wektora). Tak powstały wektor wpisywany jest do listy
 ```{r}
 t1 = Sys.time()
-doc_vectors_list <- lapply(train_tokens, function(x) colMeans(word_vectors[x,]))
+doc_vectors_list <- lapply(tokens, function(x) colMeans(word_vectors[x,]))
 print(difftime(Sys.time(), t1, units = 'sec'))
 ```
+Przetworzenie listy wektorów do dataframe
 ```{r}
 doc_vectors_df <- data.frame(matrix(unlist(doc_vectors_list), nrow=length(doc_vectors_list), byrow=TRUE))
 ```
 
+Zapis wynikowy
 ```{r}
 write.csv(doc_vectors_df,"GLOVE_NASZE_DANE.txt", row.names = TRUE)
 ```
 
 
 
-Jak to działa robienie wektorów dokumentu?
+Jak dokładnie działa tworzenie wektorów dokumentu?
 <!-- ```{r} -->
 <!-- writeLines('lista słów dokumentu') -->
-<!-- writeLines(train_tokens[[1]]) # token zawiera listę słów dla danego dokumentu -->
+<!-- writeLines(train_tokens[[1]]) # zawiera listę słów w danym dokumentcie -->
 <!-- writeLines("\n") -->
 <!-- writeLines("wektory dla poszczególnych słów") -->
-<!-- word_vectors[train_tokens[[1]],] # macierz/DF zawierająca vektory dla poszczególnych słów -->
+<!-- word_vectors[train_tokens[[1]],] #lista zawierająca vektory dla poszczególnych słów -->
 <!-- writeLines("\n") -->
 <!-- writeLines("Srednia wartość z współrzędnych wektorów -> wektor dokumentu") -->
 <!-- print(colMeans(word_vectors[train_tokens[[1]],])) -->
 <!-- ``` -->
-<!-- ```{r} -->
-<!-- write.table(doc_vectors_matrix,file="Glove_Nasze_Dane.txt") -->
-
-<!-- ``` -->
-<!-- ```{r} -->
-<!-- write.table(doc_vectors_matrix,file="Glove_Nasze_Dane.txt",row.names=FALSE) -->
-<!-- ``` -->
-<!-- ```{r} -->
-<!-- read.table("Glove_Nasze_Dane.txt",header=TRUE) -->
-<!-- ``` -->
- 
- 
