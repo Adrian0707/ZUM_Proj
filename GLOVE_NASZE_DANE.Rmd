@@ -76,12 +76,10 @@ Przetworzenie listy wektorów do dataframe
 doc_vectors_df <- data.frame(matrix(unlist(doc_vectors_list), nrow=length(doc_vectors_list), byrow=TRUE))
 ```
 
-Zapis wynikowy
+Zapis wyników
 ```{r}
 write.csv(doc_vectors_df,"GLOVE_NASZE_DANE.txt", row.names = TRUE)
 ```
-
-
 
 Jak dokładnie działa tworzenie wektorów dokumentu?
 <!-- ```{r} -->
