@@ -1,24 +1,19 @@
-Definicja funkcji 
-
+Definicja funkcji wczytującej pretrenowane wektory  
 ```{r}
 proc_pretrained_vec <- function(p_vec) {
-  # initialize space for values and the names of each word in vocab
   vals <- vector(mode = "list", length(p_vec))
   names <- character(length(p_vec))
 
-  # loop through to gather values and names of each word
   for(i in 1:length(p_vec)) {
-    if(i %% 1000 == 0) {print(i)}
+    if(i %% 10000 == 0) {print(i)}
     this_vec <- p_vec[i]
     this_vec_unlisted <- unlist(strsplit(this_vec, " "))
-    this_vec_values <- as.numeric(this_vec_unlisted[-1])  # this needs testing, does it become numeric?
+    this_vec_values <- as.numeric(this_vec_unlisted[-1])
     this_vec_name <- this_vec_unlisted[1]
-
     vals[[i]] <- this_vec_values
     names[[i]] <- this_vec_name
   }
-
-  # convert lists to data.frame and attach the names
+  
   glove <- data.frame(vals)
   names(glove) <- names
 
@@ -26,174 +21,117 @@ proc_pretrained_vec <- function(p_vec) {
 }
 ```
 
-Wczytanie 
-
+Wczytywanie pretrenowanych wektorów
 ```{r}
 setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
-    
 g6b <- scan(file = "Data/glove.6B/glove.6B.100d.txt", what="", sep="\n")
 
 glove <- proc_pretrained_vec(g6b)
-    
-print(dim(glove)) 
-```
-Wektory podobne
-
-```{r}
 glove_T = t(glove)
 library(text2vec)
 ```
-
-
-
+Sprawdzenie poprawności działania
 ```{r}
 fruit = glove_T["king", , drop = FALSE] - glove_T["man", , drop = FALSE] + glove_T["woman", , drop = FALSE]  
 cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
-# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
 head(sort(cos_sim[,1], decreasing = TRUE), 5)
 ```
-
-```{r}
-fruit = glove_T["flock", , drop = FALSE] - glove_T["geese", , drop = FALSE] + glove_T["buffalo", , drop = FALSE]  
-cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
-# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
-head(sort(cos_sim[,1], decreasing = TRUE), 5)
-```
-
-```{r}
-fruit = glove_T["flock", , drop = FALSE] - glove_T["geese", , drop = FALSE] + glove_T["bison", , drop = FALSE]  
-cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
-# odległość cosinusowa https://cran.r-project.org/web/packages/text2vec/text2vec.pdf str 29
-head(sort(cos_sim[,1], decreasing = TRUE), 5)
-```
-
-
 Przygotowanie danych
 ```{r}
+library(stringr)
+
+setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
 df <- read.csv(
   file = 'Data/winemag-data-130k-v2.csv',
   sep = ','
 )
+# Odrzucenie przykładów nie posiadających wartości w kolumnie opisu
+df_processed <- df[,colSums(is.na(df["description"]))<nrow(df)]
 
-df2 <- df[,colSums(is.na(df["description"]))<nrow(df)]
-df2[["description"]] <- tolower(df2[["description"]])
+# Zamiana wszyskich znaków na małe znaki
+df_processed[["description"]] <- tolower(df_processed[["description"]])
 
-library(stringr)
-df2[["description"]] <-str_replace(gsub("([^a-z'])", " ", df2[["description"]]), "B", "b") 
-df2[["description"]] <-str_replace(gsub("\\s+", " ", df2[["description"]]), "B", "b") 
-df2[["description"]] <-str_replace(gsub("\\s$", "", df2[["description"]]), "B", "b")
+# Odrzucenie wszyskich znaków specjalnych oraz liczb poza znakiem "'" specyficznym dla języka ang
+df_processed[["description"]] <- str_replace(gsub("([^a-z'])", 
+                                                  " ", 
+                                                  df_processed[["description"]]), 
+                                             "B", 
+                                             "b") 
 
+# Usunięcie powtórzonych spacji
+df_processed[["description"]] <-str_replace(gsub("\\s+",
+                                                 " ",
+                                                 df_processed[["description"]]),
+                                              "B",
+                                              "b")
 
-#Sprawdzanie
-df2[29996,"description"]
-df[29996,"description"]
-df2[502,"description"]
-df[502,"description"]
+# Usunięcie spacji na końcu opisu
+df_processed[["description"]] <-str_replace(gsub("\\s$", "", df_processed[["description"]]), "B", "b")
 ```
 
-Podział danych (Przy uczeniu na naszych danych)
-Jaką częśc danych bierzemy czy na tym etapie wszyskie vektory musimy zrobić
-
+Twożenie Tokenów
 ```{r}
-#
-library(data.table)
-#library(magrittr)
-#data("df2")
-setDT(df2)
-setkey(df2, X)
-set.seed(2017L)
-all_ids = df2$X
-train_ids = setdiff(all_ids, -1)
-#test_ids = setdiff(all_ids, train_ids)
-train = df2[J(train_ids)]
-#test = df2[J(test_ids)]
-
+tokens = word_tokenizer(df_processed$description)
 ```
 
-Robienie Tokenów
-```{r}
-tokens = word_tokenizer(df2$description)
-```
 
-Czyszczenie tokenóW
-
-Trwa długo sprawdzanie części wspólnej z ogromnym words za każdym razem
-
-!!!może wcześniej zrobić intersekcje words ze słowami występującymi by ograniczyć czas przeszukiwania ?!!!
-
-Dla 1000
-pełny słownik 23.032 secs
-słownik cześć wspólna 0.763001 secs
-
+Przygotowanie listy słów występujących w recenzjach win
 ```{r}
 tokens_flat <- unlist(tokens, recursive=FALSE)
 tokens_flat_uniq <- unique(tokens_flat)
 ```
 
-# ```{r}
-# t1 = Sys.time()
-# tokens_clear <- lapply(tokens, function(x) intersect(x,words_in_token))
-# print(difftime(Sys.time(), t1, units = 'sec'))
-# ```
-
-# ```{r}
-# t1 = Sys.time()
-# tokens_clear <- lapply(tokens[1:1000], function(x) intersect(x,words))
-# print(difftime(Sys.time(), t1, units = 'sec'))
-# ```
-
-<!-- Jak działa oczyszczanie ? -->
-<!-- ```{r} -->
-<!-- words <- row.names(glove_T) -->
-<!-- writeLines("intersect\n") -->
-<!-- intersect(tokens[[1]],words_in_token) -->
-<!-- writeLines("\noriginal\n") -->
-<!-- tokens[[1]] -->
-<!-- ``` -->
-
-Obcinanie glove_T tylko te słowa, które wytępują w tokens
-
+Przycinanie glove_T ze względu na słowa występujące w recenzjach win (Zwiekszenie wydajności)
 ```{r}
 glove_T_cut <- glove_T[ row.names(glove_T) %in% tokens_flat_uniq, ]
 ```
 
-Dopisanie do wektorów, wektoróW dla słów nie występujących obecnie w zaczytanych danych, ale występujących w description jako wektory zerowe 
-
+Dopisanie wektorów zerowych do glove_T_cut dla słów występujących w recenzjach win ale niewystępujących w zaczytanych wektorach
 ```{r}
-words_missing_in_glove_T_cut <- tokens_flat_uniq[!(tokens_flat_uniq %in% row.names(glove_T_cut)) ]
+# Słowa znajdujące się w recenzjach ale nie znajdujace się w glove_T_cut
+words_missing_in_glove_T_cut <-tokens_flat_uniq[!(tokens_flat_uniq %in% row.names(glove_T_cut))]
+
+# Utworzenie macierzy zerowej o liczbie kolumn odpowiadającej macierzy glove_T_cut oraz wierszy odpowiedajacej liczbie brakujących słów
+words_missing_in_glove_T_cut_matrix <- matrix(0, 
+                                              length(words_missing_in_glove_T_cut),
+                                              dim(glove_T_cut)[2])
+
+#Dopisanie nazw wierszy z listy brakujących słów
+rownames(words_missing_in_glove_T_cut_matrix) <- words_missing_in_glove_T_cut
+
+#Dołączenie do glove_T_cut macierzy zerowej dla brakujących wektorów
+glove_T_cut_missing_words_added <- rbind(glove_T_cut,words_missing_in_glove_T_cut_matrix)
+```
+
+Sprawdzenie poprawności poprzedniego kroku
+```{r}
 print("missing words")
 length(words_missing_in_glove_T_cut)
 print("words in glove")
-dim(glove_T_cut)
+dim(glove_T_cut)[1]
 print("sum")
 length(words_missing_in_glove_T_cut)+dim(glove_T_cut)[1]
 print("unique words in tokens")
 length(tokens_flat_uniq)
-
-words_missing_in_glove_T_cut_matrix <- matrix(0, 
-                                              length(words_missing_in_glove_T_cut),
-                                              dim(glove_T_cut)[2])
-rownames(words_missing_in_glove_T_cut_matrix) <- words_missing_in_glove_T_cut
-
-glove_T_cut_missing_words_added <- rbind(glove_T_cut,words_missing_in_glove_T_cut_matrix)
 print("glove after missing vectors added")
-dim(glove_T_cut_missing_words_added)
+dim(glove_T_cut_missing_words_added)[1]
 
 ```
-Tworzenie wektorów dokumentu funkcja dla każdego tokena pobiera wartości vektorów dla kolejnych słów następnie robi z nich średnią i wpisuje te wartość do doc_vectors_list
 
-Docs Vecs  136.4472 secs
+Tworzenie wektorów dla dokumentów 
+Dla wszystkich tokenóW pobierane są występujące w nich wektory słów a następnie liczona jest średnia z wartości kolumn (kolumna-współrzędna wektora). Tak powstały wektor wpisywany jest do listy
 ```{r}
 t1 = Sys.time()
 doc_vectors_list <- lapply(tokens, function(x) colMeans(glove_T_cut_missing_words_added[x,]))
 print(difftime(Sys.time(), t1, units = 'sec'))
 ```
 
+Przetworzenie listy wektorów do dataframe
 ```{r}
 doc_vectors_df <- data.frame(matrix(unlist(doc_vectors_list), nrow=length(doc_vectors_list), byrow=TRUE))
 ```
 
+Zapis wyników
 ```{r}
 write.csv(doc_vectors_df,"GLOVE_WCZYTANE_DANE.txt", row.names = TRUE)
 ```
-
