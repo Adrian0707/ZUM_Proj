@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Wczytanie danych
 ```{r}
 df <- read.csv(
-  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/winemag-data-130k-v2.csv",
+  file = "winemag-data-130k-v2.csv",
   sep = ','
 )
 df <- df[,colSums(is.na(df["description"]))<nrow(df)]
@@ -36,14 +36,14 @@ word_index = tokenizer$word_index
 cat("Found", length(word_index), "unique tokens.\n")
 write.table(
   word_index,
-  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/word_index_word2vec.txt"
+  file = "word_index_word2vec.txt"
 )
 ```
 
 
 Ładowanie gotowych wektorów
 ```{r}
-word2vec_dir = 'C:/Users/aniak/Documents/Studia/ZUM_Proj/vectors_word2vec'
+word2vec_dir = 'vectors_word2vec'
 lines <- readLines(file.path(word2vec_dir, "model.txt"))
 embeddings_index <- new.env(hash = TRUE, parent = emptyenv())
 for (i in 1:length(lines)) {
@@ -73,14 +73,14 @@ for (word in names(word_index)) {
 
 write.table(
   embedding_matrix,
-  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/embedding_matrix_word2vec.txt"
+  file = "embedding_matrix_word2vec.txt"
 )
 ```
 
 Załadowanie word_index
 ```{r}
 word_index <- read.table(
-  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/word_index_word2vec.txt"
+  file = "word_index_word2vec.txt"
 )
 head(word_index)
 ```
@@ -88,7 +88,7 @@ head(word_index)
 Załadowanie embedding_matrix
 ```{r}
 embedding_matrix <- read.table(
-  file = "C:/Users/aniak/Documents/Studia/ZUM_Proj/embedding_matrix_word2vec.txt"
+  file = "embedding_matrix_word2vec.txt"
 )
 head(embedding_matrix)
 ```
@@ -117,6 +117,6 @@ for (doc in 1:length(data)){
   }
 }
 
-write.table(doc2vec, file="C:/Users/aniak/Documents/Studia/ZUM_Proj/doc2vec_word2vec_downloaded.txt")
+write.table(doc2vec, file="doc2vec_word2vec_downloaded.txt")
 
 ```
