@@ -23,26 +23,26 @@ proc_pretrained_vec <- function(p_vec) {
 
 Wczytywanie pretrenowanych wektorów
 ```{r}
-setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
-g6b <- scan(file = "Data/glove.6B/glove.6B.100d.txt", what="", sep="\n")
+g6b <- scan(file = "glove.6B.100d.txt", what="", sep="\n")
 
 glove <- proc_pretrained_vec(g6b)
 glove_T = t(glove)
 library(text2vec)
 ```
+
 Sprawdzenie poprawności działania
 ```{r}
 fruit = glove_T["king", , drop = FALSE] - glove_T["man", , drop = FALSE] + glove_T["woman", , drop = FALSE]  
 cos_sim = sim2(x = glove_T, y = fruit, method = "cosine", norm = "l2") 
 head(sort(cos_sim[,1], decreasing = TRUE), 5)
 ```
+
 Przygotowanie danych
 ```{r}
 library(stringr)
 
-setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
 df <- read.csv(
-  file = 'Data/winemag-data-130k-v2.csv',
+  file = 'winemag-data-130k-v2.csv',
   sep = ','
 )
 # Odrzucenie przykładów nie posiadających wartości w kolumnie opisu
@@ -51,7 +51,7 @@ df_processed <- df[,colSums(is.na(df["description"]))<nrow(df)]
 # Zamiana wszyskich znaków na małe znaki
 df_processed[["description"]] <- tolower(df_processed[["description"]])
 
-# Odrzucenie wszyskich znaków specjalnych oraz liczb poza znakiem "'" specyficznym dla języka ang
+# Odrzucenie wszystkich znaków specjalnych oraz liczb poza znakiem "'" specyficznym dla języka ang
 df_processed[["description"]] <- str_replace(gsub("([^a-z'])", 
                                                   " ", 
                                                   df_processed[["description"]]), 
@@ -73,7 +73,6 @@ Twożenie Tokenów
 ```{r}
 tokens = word_tokenizer(df_processed$description)
 ```
-
 
 Przygotowanie listy słów występujących w recenzjach win
 ```{r}
@@ -133,5 +132,5 @@ doc_vectors_df <- data.frame(matrix(unlist(doc_vectors_list), nrow=length(doc_ve
 
 Zapis wyników
 ```{r}
-write.csv(doc_vectors_df,"GLOVE_WCZYTANE_DANE.txt", row.names = TRUE)
+write.csv(doc_vectors_df,"GLOVE_GOTOWE_WEKTORY.txt", row.names = TRUE)
 ```

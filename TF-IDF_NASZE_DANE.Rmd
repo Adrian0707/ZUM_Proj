@@ -2,9 +2,8 @@ Przygotowanie danych
 ```{r}
 library(stringr)
 
-setwd("D:/PW-MAGISTERSKIE/PW-Magisterskie-sem2/ZUM/Projekt/ZUM_Proj")
 df <- read.csv(
-  file = 'Data/winemag-data-130k-v2.csv',
+  file = 'winemag-data-130k-v2.csv',
   sep = ','
 )
 # Odrzucenie przykładów nie posiadających wartości w kolumnie opisu
@@ -13,7 +12,7 @@ df_processed <- df[,colSums(is.na(df["description"]))<nrow(df)]
 # Zamiana wszyskich znaków na małe znaki
 df_processed[["description"]] <- tolower(df_processed[["description"]])
 
-# Odrzucenie wszyskich znaków specjalnych oraz liczb poza znakiem "'" specyficznym dla języka ang
+# Odrzucenie wszystkich znaków specjalnych oraz liczb poza znakiem "'" specyficznym dla języka ang
 df_processed[["description"]] <- str_replace(gsub("([^a-z'])", 
                                                   " ", 
                                                   df_processed[["description"]]), 
@@ -47,15 +46,25 @@ vocab = create_vocabulary(it, stopwords = stop_words);
 Przycinanie słownika 
 ```{r}
 pruned_vocab = prune_vocabulary(vocab,
-                                doc_proportion_max = 0.4,
-                                doc_proportion_min = 0.008)
+                                doc_proportion_max = 0.2,
+                                doc_proportion_min = 0.001)
+
 vectorizer = vocab_vectorizer(pruned_vocab)
 dtm = create_dtm(it, vectorizer)
-   
 ```
 
 Fit and transform TF-IDF
 ```{r}
 tfidf = TfIdf$new()
 dtm_tfidf = fit_transform(dtm, tfidf)
+```
+
+Przetworzenie tf-idf do dataframe
+```{r}
+dtm_tfidf_df <- data.frame(as.matrix(dtm_tfidf))
+```
+
+Zapis wyników
+```{r}
+write.csv(dtm_tfidf_df,"TF-IDF_0.2_0.001.txt", row.names = TRUE)
 ```
